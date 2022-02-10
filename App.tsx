@@ -1,19 +1,39 @@
-import React, { useCallback, useMemo } from "react";
-import { SafeAreaView, View, StyleSheet } from "react-native";
+import React, {useCallback, useEffect, useMemo} from 'react';
+import {SafeAreaView, View, StyleSheet} from 'react-native';
 
-import TaskContext, { Task } from "./app/models/Task";
-import IntroText from "./app/components/IntroText";
-import AddTaskForm from "./app/components/AddTaskForm";
-import TaskList from "./app/components/TaskList";
-import colors from "./app/styles/colors";
+import TaskContext, {Task} from './app/models/Task';
+import IntroText from './app/components/IntroText';
+import AddTaskForm from './app/components/AddTaskForm';
+import TaskList from './app/components/TaskList';
+import colors from './app/styles/colors';
+import {BSON} from 'realm';
+import {TaskAlias} from './app/models/TaskAlias';
 
-const { useRealm, useQuery, RealmProvider } = TaskContext;
+const {useRealm, useQuery, RealmProvider} = TaskContext;
 
 function App() {
   const realm = useRealm();
   const result = useQuery(Task);
 
-  const tasks = useMemo(() => result.sorted("createdAt"), [result]);
+  const tasks = useMemo(() => result.sorted('createdAt'), [result]);
+
+  useEffect(() => {
+    realm.write(() => {
+      const task = realm.create<Task>(
+        Task.schema.name,
+        Task.generate(String(Math.random())),
+      );
+
+      for (let i = 0; i < 3; i++) {
+        const taskAlias = realm.create<TaskAlias>(TaskAlias.schema.name, {
+          _id: new BSON.ObjectID(),
+          task: task,
+        });
+      }
+
+      console.log(realm.objects(TaskAlias.schema.name));
+    });
+  }, []);
 
   const handleAddTask = useCallback(
     (description: string): void => {
@@ -29,7 +49,7 @@ function App() {
       // of sync participants to successfully sync everything in the transaction, otherwise
       // no changes propagate and the transaction needs to start over when connectivity allows.
       realm.write(() => {
-        realm.create("Task", Task.generate(description));
+        realm.create('Task', Task.generate(description));
       });
     },
     [realm],
@@ -78,7 +98,11 @@ function App() {
         {tasks.length === 0 ? (
           <IntroText />
         ) : (
-          <TaskList tasks={tasks} onToggleTaskStatus={handleToggleTaskStatus} onDeleteTask={handleDeleteTask} />
+          <TaskList
+            tasks={tasks}
+            onToggleTaskStatus={handleToggleTaskStatus}
+            onDeleteTask={handleDeleteTask}
+          />
         )}
       </View>
     </SafeAreaView>
