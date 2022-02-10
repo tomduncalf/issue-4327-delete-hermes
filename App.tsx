@@ -19,20 +19,23 @@ function App() {
 
   useEffect(() => {
     realm.write(() => {
-      const task = realm.create<Task>(
-        Task.schema.name,
-        Task.generate(String(Math.random())),
-      );
+      realm.create<Task>(Task.schema.name, Task.generate('asd1'));
+      realm.create<Task>(Task.schema.name, Task.generate('asd2'));
+      realm.create<Task>(Task.schema.name, Task.generate('asd3'));
+      realm.create<Task>(Task.schema.name, Task.generate('asd4'));
 
-      for (let i = 0; i < 3; i++) {
-        const taskAlias = realm.create<TaskAlias>(TaskAlias.schema.name, {
-          _id: new BSON.ObjectID(),
-          task: task,
-        });
-      }
-
-      console.log(realm.objects(TaskAlias.schema.name));
+      console.log(realm.objects(Task.schema.name));
     });
+
+    const thingsToBeRemoved = realm
+      .objects<Task>(Task.schema.name)
+      .filter(task => task.description === 'asd2');
+
+    realm.write(() => {
+      realm.delete(thingsToBeRemoved);
+    });
+
+    console.log(realm.objects(Task.schema.name));
   }, []);
 
   const handleAddTask = useCallback(
